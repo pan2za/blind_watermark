@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 from PyQt5 import QtCore, QtGui,QtWidgets
 from PyQt5.QtPrintSupport import QPrinter, QPrintDialog,QPrintPreviewDialog
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 
 class ImageViewer(QtWidgets.QMainWindow):
     def __init__(self):
         super(ImageViewer, self).__init__()
+        self.vrf_window = VrfWindow()
         self.imageLabel = QtWidgets.QLabel()
         self.imageLabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
         self.imageLabel.setBackgroundRole(QtGui.QPalette.Dark)
@@ -20,17 +23,18 @@ class ImageViewer(QtWidgets.QMainWindow):
        
         self.setAcceptDrops(True)#
        
-        self.setWindowTitle("Image Viewer")
+        self.setWindowTitle("盲水印分析器")
         self.resize(500, 400)
-    
+             # Sub Window
+
     def open(self):
-        fileName,filetype = QtWidgets.QFileDialog.getOpenFileName(self, "Open File",
+        fileName,filetype = QtWidgets.QFileDialog.getOpenFileName(self, "打开文件",
                 QtCore.QDir.currentPath())
         if fileName:
             image = QtGui.QImage(fileName)
             if image.isNull():
-                QtWidgets.QMessageBox.information(self, "Image Viewer",
-                        "Cannot load %s." % fileName)
+                QtWidgets.QMessageBox.information(self, "盲水印分析器",
+                        "无法加载 %s." % fileName)
                 return
             self.imageLabel.setPixmap(QtGui.QPixmap.fromImage(image))
             self.scaleFactor = 1.0
@@ -52,8 +56,8 @@ class ImageViewer(QtWidgets.QMainWindow):
                 if fileName:
                     image = QtGui.QImage(fileName)
                     if image.isNull():
-                        QtWidgets.QMessageBox.information(self, "Image Viewer",
-                                "Cannot load %s." % fileName)
+                        QtWidgets.QMessageBox.information(self, "盲水印分析器",
+                                "无法加载 %s." % fileName)
                         return
                     self.imageLabel.setPixmap(QtGui.QPixmap.fromImage(image))
                     self.scaleFactor = 1.0
@@ -118,9 +122,12 @@ class ImageViewer(QtWidgets.QMainWindow):
                 "zooming and scaling features.</p>"
                 "<p>In addition the example shows how to use QPainter to "
                 "print an image.</p>")
+
+    def encode(self):
+        self.scaleImage(0.8)
                 
     def createActions(self):
-        self.openAct = QtWidgets.QAction("&Open...", self, shortcut="Ctrl+O",
+        self.openAct = QtWidgets.QAction("打开(&O)...", self, shortcut="Ctrl+O",
                 triggered=self.open)
         self.printAct = QtWidgets.QAction("&Print...", self, shortcut="Ctrl+P",
                 enabled=False, triggered=self.printPreview)
@@ -138,23 +145,31 @@ class ImageViewer(QtWidgets.QMainWindow):
         self.aboutAct = QtWidgets.QAction("&About", self, triggered=self.about)
         self.aboutQtAct = QtWidgets.QAction("About &Qt", self,
                 triggered=QtWidgets.qApp.aboutQt)
-                
+        self.decodeAct = QtWidgets.QAction("解码验证(&V)", self,
+                shortcut="Ctrl+V", enabled=False, triggered=self.vrf_window.show)          
+        self.encodeAct = QtWidgets.QAction("增加水印(&E)", self,
+                shortcut="Ctrl+E", enabled=False, triggered=self.encode)                      
+   
     def createMenus(self):
-        self.fileMenu = QtWidgets.QMenu("&File", self)
+        self.fileMenu = QtWidgets.QMenu("文件(&F)", self)
         self.fileMenu.addAction(self.openAct)
         self.fileMenu.addAction(self.printAct)
         self.fileMenu.addSeparator()
         self.fileMenu.addAction(self.exitAct)
-        self.viewMenu = QtWidgets.QMenu("&View", self)
+        self.viewMenu = QtWidgets.QMenu("查看(&V)", self)
         self.viewMenu.addAction(self.zoomInAct)
         self.viewMenu.addAction(self.zoomOutAct)
         self.viewMenu.addAction(self.normalSizeAct)
         self.viewMenu.addSeparator()
         self.viewMenu.addAction(self.fitToWindowAct)
-        self.helpMenu = QtWidgets.QMenu("&Help", self)
+        self.anaMenu = QtWidgets.QMenu("分析(&A)", self)
+        self.anaMenu.addAction(self.decodeAct)
+        self.anaMenu.addAction(self.encodeAct)
+        self.helpMenu = QtWidgets.QMenu("帮助(&H)", self)
         self.helpMenu.addAction(self.aboutAct)
         self.helpMenu.addAction(self.aboutQtAct)
         self.menuBar().addMenu(self.fileMenu)
+        self.menuBar().addMenu(self.anaMenu)
         self.menuBar().addMenu(self.viewMenu)
         self.menuBar().addMenu(self.helpMenu)
         
@@ -162,6 +177,8 @@ class ImageViewer(QtWidgets.QMainWindow):
         self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
         self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
         self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
+        self.encodeAct.setEnabled(not self.encodeAct.isChecked())
+        self.decodeAct.setEnabled(True)        
     
     def scaleImage(self, factor):
         self.scaleFactor *= factor
@@ -175,6 +192,17 @@ class ImageViewer(QtWidgets.QMainWindow):
         scrollBar.setValue(int(factor * scrollBar.value()
                                 + ((factor - 1) * scrollBar.pageStep()/2)))
 
+class VrfWindow(QtWidgets.QWidget):
+     def __init__(self):
+         super(VrfWindow, self).__init__()
+         self.resize(400, 300)
+         self.setWindowTitle("解码结果报告")
+         # Label
+         self.label = QLabel(self)
+         self.label.setGeometry(0, 0, 400, 300)
+         self.label.setText('解码结果报告')
+         self.label.setAlignment(Qt.AlignCenter)
+         self.label.setStyleSheet('font-size:40px')
 
 if __name__ == '__main__':
     import sys

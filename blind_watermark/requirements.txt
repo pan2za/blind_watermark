@@ -1,1 +1,2 @@
-blind-watermark
+opencv-python
+numpy

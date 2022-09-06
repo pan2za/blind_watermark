@@ -3,11 +3,17 @@ from PyQt5 import QtCore, QtGui,QtWidgets
 from PyQt5.QtPrintSupport import QPrinter, QPrintDialog,QPrintPreviewDialog
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+import sys 
+sys.path.append("..") 
+from blind_watermark import WaterMark
 
 class ImageViewer(QtWidgets.QMainWindow):
     def __init__(self):
         super(ImageViewer, self).__init__()
+
         self.vrf_window = VrfWindow()
+        self.file_name = ""
+
         self.imageLabel = QtWidgets.QLabel()
         self.imageLabel.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
         self.imageLabel.setBackgroundRole(QtGui.QPalette.Dark)
@@ -25,12 +31,13 @@ class ImageViewer(QtWidgets.QMainWindow):
        
         self.setWindowTitle("盲水印分析器")
         self.resize(500, 400)
-             # Sub Window
+
 
     def open(self):
         fileName,filetype = QtWidgets.QFileDialog.getOpenFileName(self, "打开文件",
                 QtCore.QDir.currentPath())
         if fileName:
+            self.file_name = fileName
             image = QtGui.QImage(fileName)
             if image.isNull():
                 QtWidgets.QMessageBox.information(self, "盲水印分析器",
@@ -54,6 +61,7 @@ class ImageViewer(QtWidgets.QMainWindow):
                 url=urls[0]
                 fileName = str(url.toLocalFile())
                 if fileName:
+                    self.file_name = fileName
                     image = QtGui.QImage(fileName)
                     if image.isNull():
                         QtWidgets.QMessageBox.information(self, "盲水印分析器",
@@ -125,7 +133,15 @@ class ImageViewer(QtWidgets.QMainWindow):
 
     def encode(self):
         self.scaleImage(0.8)
-                
+
+    @pyqtSlot()
+    def decode(self):
+        """
+        Slot documentation goes here.
+        """
+        self.vrf_window.show()
+        self.vrf_window.sig_vrf.emit(self.file_name)#修改5：窗口传递具体的信号
+
     def createActions(self):
         self.openAct = QtWidgets.QAction("打开(&O)...", self, shortcut="Ctrl+O",
                 triggered=self.open)
@@ -146,7 +162,7 @@ class ImageViewer(QtWidgets.QMainWindow):
         self.aboutQtAct = QtWidgets.QAction("About &Qt", self,
                 triggered=QtWidgets.qApp.aboutQt)
         self.decodeAct = QtWidgets.QAction("解码验证(&V)", self,
-                shortcut="Ctrl+V", enabled=False, triggered=self.vrf_window.show)          
+                shortcut="Ctrl+V", enabled=False, triggered=self.decode)          
         self.encodeAct = QtWidgets.QAction("增加水印(&E)", self,
                 shortcut="Ctrl+E", enabled=False, triggered=self.encode)                      
    
@@ -193,8 +209,12 @@ class ImageViewer(QtWidgets.QMainWindow):
                                 + ((factor - 1) * scrollBar.pageStep()/2)))
 
 class VrfWindow(QtWidgets.QWidget):
+     sig_vrf=pyqtSignal(str) #修改4：子窗口建立信号传递的是（str）数据
+
+     @pyqtSlot()
      def __init__(self):
          super(VrfWindow, self).__init__()
+         self.sig_vrf.connect(self.fun)
          self.resize(400, 300)
          self.setWindowTitle("解码结果报告")
          # Label
@@ -202,7 +222,12 @@ class VrfWindow(QtWidgets.QWidget):
          self.label.setGeometry(0, 0, 400, 300)
          self.label.setText('解码结果报告')
          self.label.setAlignment(Qt.AlignCenter)
-         self.label.setStyleSheet('font-size:40px')
+         self.label.setStyleSheet('font-size:10px')
+     def fun(self,fn):
+         bwm1 = WaterMark(password_img=1, password_wm=1)
+         len_wm = len(bwm1.wm_bit)
+         wm_extract = bwm1.extract(fn, wm_shape=len_wm, mode='str')
+         self.label.setText(wm_extract)
 
 if __name__ == '__main__':
     import sys

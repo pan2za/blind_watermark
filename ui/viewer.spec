@@ -5,11 +5,11 @@ block_cipher = None
 
 
 a = Analysis(
-    ['viewer.py'],
-    pathex=['D:\\blind_watermark\\ui'],
+    ['viewer.py','../blind_watermark/blind_watermark.py'],
+    pathex=[],
     binaries=[],
-    datas=[('c:\\program files\\windowsapps\\pythonsoftwarefoundation.python.3.10_3.10.2032.0_x64__qbz5n2kfra8p0\\lib\\site-packages','D:\\blind_watermark\\lib')],
-    hiddenimports=[],
+    datas=[('d://blind_watermark//ui//images','images')],
+    hiddenimports=['blind_watermark','numpy','pywavelets'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
